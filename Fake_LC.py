@@ -27,7 +27,7 @@ def quasiperiodic_signal(A, T, t): #amplitude, period, time
 #function to simulate random light curve
 def lightcurve(tmin, tmax, cadence, mag, A, T, zeropoint):
     t = np.arange(tmin, tmax, cadence)
-    flux = mag_to_flux(t,mag, exptime=cadence, zeropoint=zeropoint)
+    flux = mag_to_flux(t,mag, exptime=cadence, zeropoint=zeropoint) #Cadence is a sequence of individual requests, evenly spaced in time
     flux = 1.0 + np.random.randn(t.size) * flux
     
     periodic_signal = quasiperiodic_signal(A,T,t)+np.median(flux)
@@ -38,13 +38,13 @@ def lightcurve(tmin, tmax, cadence, mag, A, T, zeropoint):
 
 #scenario parameters
 duration=27
-cadence= (2/60)/24 #unit of days 
+cadence= (2/60)/24 #unit of days; Cadence is a sequence of individual requests, evenly spaced in time
 cadence = (2*u.min).to(u.day).value
-T=6
-start=0
-mag=10
-zeropoint=20.44
-A = 20/1e3 #amplitude of injected sine wave
+T = 6
+start = 0
+mag = 10
+zeropoint = 20.44
+A = 20 / 1e3 #amplitude of injected sine wave
 time, injected_signal, periodic_signal = lightcurve(start,duration,cadence,mag,A,T,zeropoint)
 
 plt.plot(time, injected_signal, color='black')
@@ -158,21 +158,6 @@ durations = np.linspace(minT, maxT, 50)
 
 periods = period_grid(R_star=R_star, M_star=M_star, time_span=LCduration, period_min=minP, period_max=maxP) #oversampling factor
 
-bls = BoxLeastSquares(t, injected_flux) 
-bls_power = bls.power(periods, durations)
-
-bls_SDE = (bls_power.power - np.mean(bls_power.power)) / np.std(bls_power.power)
-
-index = np.argmax(bls_power.power) #finds strongest peak in BLS power spectrum
-BLS_periods=bls_power.period[index]
-BLS_t0s=bls_power.transit_time[index]
-BLS_depths=bls_power.depth[index]
-dur = minT #0.5
-
-bls_model=bls.model(t,bls_power.period[index], bls_power.duration[index], bls_power.transit_time[index])
-
-
-
 # #custom binning function
 def bin_func(time, flux, error, binsize):
     good = np.where(np.isfinite(time))
@@ -200,6 +185,21 @@ def bin_func(time, flux, error, binsize):
     bin_err = bin_err[good2]
 
     return bin_time, bin_flux, bin_err
+
+bls = BoxLeastSquares(t, injected_flux) 
+bls_power = bls.power(periods, durations)
+
+bls_SDE = (bls_power.power - np.mean(bls_power.power)) / np.std(bls_power.power)
+
+index = np.argmax(bls_power.power) #finds strongest peak in BLS power spectrum
+BLS_periods=bls_power.period[index]
+BLS_t0s=bls_power.transit_time[index]
+BLS_depths=bls_power.depth[index]
+dur = minT 
+
+bls_model=bls.model(t,bls_power.period[index], bls_power.duration[index], bls_power.transit_time[index])
+
+
 
 fs=10
 plt.figure(figsize=(8, 4))
